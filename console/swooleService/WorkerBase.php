@@ -1,8 +1,8 @@
 <?php
 
-namespace yii\console\swooleService;
+namespace console\swooleService;
 
-abstract class Worker
+abstract class WorkerBase
 {
 
     //框架server对象

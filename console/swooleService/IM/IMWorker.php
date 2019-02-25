@@ -6,13 +6,13 @@
  * Time: 17:28
  */
 
-namespace yii\console\swooleService\IM;
+namespace console\swooleService\IM;
+
+use console\swooleService\WorkerBase;
 
 
-class IMWorker extends Worker
+class IMWorker extends WorkerBase
 {
-    private $_appIds = array();
-    private $msgId = '';
 
     public function __construct($server)
     {

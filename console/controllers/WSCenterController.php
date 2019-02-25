@@ -1,12 +1,10 @@
 <?php
 namespace console\controllers;
 
-use Codeception\Module\AMQP;
 use yii\console\Controller;
 
 use yii\helpers\FileHelper;
-use console\swooleService\t;
-class WSController extends Controller
+class WSCenterController extends Controller
 {
     /**
      * 实例化服务
@@ -74,8 +72,6 @@ class WSController extends Controller
      */
     public function actionStart()
     {
-
-        print_r($this->config);exit;
         if ($this->getPid() !== false)
         {
             $this->stderr("服务已经启动...");
@@ -86,8 +82,8 @@ class WSController extends Controller
         $this->setPid();
 
         // 运行
-        $ws = new $this->server($this->host, $this->port, $this->mode, $this->socketType, $this->type, $this->config);
-        $ws->run();
+        $IMServer = new $this->server($this->config);
+        $IMServer->templateMethod();
         $this->stdout("服务正在运行,监听 {$this->host}:{$this->port}" . PHP_EOL);
     }
 

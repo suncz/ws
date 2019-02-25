@@ -1,14 +1,13 @@
 <?php
-namespace yii\console\swooleService\IM;
+namespace console\swooleService\IM;
 
-class IMTasker extends Tasker
+use console\swooleService\TaskerBase;
+
+class IMTasker extends TaskerBase
 {
     public function __construct($server)
     {
         parent::__construct($server);
-
-        IMTools::setIMServer($server);
-        Activity::init($server);
     }
 
     public function onTask($server, $taskId, $fromId, $data)
