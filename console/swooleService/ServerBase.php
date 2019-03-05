@@ -21,6 +21,7 @@ abstract class ServerBase
         $this->setRealServer();
         $this->setWorker();
         $this->setTasker();
+        $this->initMQProcess();
         $this->start();
     }
     abstract public function setWorker();

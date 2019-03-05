@@ -8,7 +8,7 @@
 
 namespace console\swooleService;
 
-abstract class MQConsumerProcess
+abstract class MQBase
 {
     protected $_server;
 
@@ -18,7 +18,7 @@ abstract class MQConsumerProcess
     protected $_stop;
     private $_isProcessing;
 
-    protected $_maxLoop = 0;
+    protected $_maxLoop = 10;
     protected $_currentLoop = 0;
 
     public function __construct($server)
@@ -34,8 +34,7 @@ abstract class MQConsumerProcess
     public function process()
     {
         $className = get_class($this);
-        swoole_set_process_name('php '.$this->_server->getConfig()['serverName'].' '.$className);
-
+        swoole_set_process_name('php ws'.' '.$className);
         pcntl_signal(SIGUSR1, function ($signo) use ($className) {
             Logger::info('stopping '.$className.posix_getpid());
             $this->_stop = true;
@@ -54,7 +53,7 @@ abstract class MQConsumerProcess
         $this->_mqChannel->exchange_declare($this->_getExchangeName(), $this->_getExchangeType(), false, false, false);
         $this->_mqChannel->queue_bind($this->_getQueueName(), $this->_getExchangeName());
 
-        Logger::info($className.'('.posix_getpid().') consume queue of '.$this->_getQueueName());
+        print_r($className.'('.posix_getpid().') consume queue of '.$this->_getQueueName());
 
         $this->_mqChannel->basic_consume($this->_getQueueName(), '', false, false, false, false, function ($message) use ($className) {
 
@@ -84,7 +83,7 @@ abstract class MQConsumerProcess
         $this->_mqChannel->close();
         $this->_mqConnection->close();
 
-        Logger::info($className.'('.posix_getpid().') stopped');
+        print_r($className.'('.posix_getpid().') stopped');
     }
 
     abstract public function handle($data);

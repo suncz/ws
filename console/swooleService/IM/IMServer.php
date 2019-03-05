@@ -9,8 +9,7 @@
 namespace console\swooleService\IM;
 
 use console\swooleService\ServerBase;
-use console\swooleService\IM\IMTasker;
-use yii\log\Logger;
+
 
 class IMServer extends ServerBase
 {
@@ -55,25 +54,27 @@ class IMServer extends ServerBase
         $this->realServer->set($this->config['setting']);
 
         $server->on('Start', function ($server) use ($config) {
-           print('server start');
+           print('server start'."\n");
             swoole_set_process_name('php ' . $config['serverName'] . ' master');
         });
 
         $server->on('ManagerStart', function ($server) use ($config) {
-            print('ManagerStart');
+            print('ManagerStart'."\n");
             swoole_set_process_name('php ' . $config['serverName'] . ' manager');
         });
 
         $server->on('ManagerStop', function ($server) {
-            print('ManagerStop');
+            print('ManagerStop'."\n");
 
         });
 
         $server->on('WorkerStart', function ($server, $workerId) {
-            print('worker start worker_id:' . $workerId."\n");
+
             if ($workerId < $this->config['setting']['worker_num']) {
+                print('worker start worker_id:' . $workerId."\n");
                 $this->worker = $this->getWorker($workerId);
             } else {
+                print('tasker start worker_id:' . $workerId."\n");
                 $this->tasker = $this->getTasker($workerId);
             }
         });
@@ -126,7 +127,7 @@ class IMServer extends ServerBase
 
     public function start()
     {
-        $this->initMQProcess();
+
 
         $this->realServer->start();
     }
@@ -161,24 +162,18 @@ class IMServer extends ServerBase
         return $this->config;
     }
 
+    protected function initMQProcess()
+    {
+        $this->createMQProcess('\console\swooleService\IM\IMMQCommonConsumerProcess',2);
+    }
     protected function createMQProcess($className, $num)
     {
         for ($i = 0; $i < $num; ++$i) {
-            $process = new swoole_process(function () use ($className) {
+            $process = new \swoole_process(function () use ($className) {
                 (new $className($this))->process();
             });
-            $this->server->addProcess($process);
+            $this->realServer->addProcess($process);
         }
     }
 
-
-    protected function initMQProcess()
-    {
-
-    }
-
-    public function getMQ()
-    {
-
-    }
 }
