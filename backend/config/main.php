@@ -37,6 +37,19 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
+        'redis'=>[
+            'class'=>'yii\redis\connection',
+            'hostname' => 'localhost',
+            'port' => 6379,
+            'database' => 0,
+        ],
+        'db'=>[
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=10.0.5.179;dbname=IM',
+            'username' => 'root',
+            'password' => 'root',
+            'charset' => 'utf8',
+        ],
         /*
         'urlManager' => [
             'enablePrettyUrl' => true,

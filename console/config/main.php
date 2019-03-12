@@ -13,13 +13,13 @@ return [
     'controllerNamespace' => 'console\controllers',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
+        '@npm' => '@vendor/npm-asset',
     ],
     'controllerMap' => [
         'fixture' => [
             'class' => 'yii\console\controllers\FixtureController',
             'namespace' => 'common\fixtures',
-          ],
+        ],
         'w-s-center' => [
             'class' => 'console\controllers\WSCenterController',
             'server' => 'console\swooleService\IM\IMServer', // 可替换为自己的业务类继承该类即可
@@ -27,7 +27,7 @@ return [
                 'host' => '0.0.0.0',// 监听地址
                 'port' => 9501,// 监听端口
                 'type' => 'ws', // 默认为ws连接，可修改为wss
-                'serverName'=>'ws',
+                'serverName' => 'ws',
                 // 'ssl_cert_file' => '',
                 // 'ssl_key_file' => '',
                 'pid_file' => __DIR__ . '/../../console/runtime/logs/server.pid',
@@ -42,8 +42,9 @@ return [
                     'backlog' => 128,
                     'heartbeat_idle_time' => 300,
                     'heartbeat_check_interval' => 60,
-                    'dispatch_mode' => 1,
+                    'dispatch_mode' => 2,
                 ),
+
             ],
         ],
         'w-s' => [
@@ -53,7 +54,7 @@ return [
             'port' => 9501,// 监听端口
             'type' => 'ws', // 默认为ws连接，可修改为wss
             'config' => [// 标准的swoole配置项都可以再此加入
-                'serverName'=>'ws',
+                'serverName' => 'ws',
                 // 'ssl_cert_file' => '',
                 // 'ssl_key_file' => '',
                 'pid_file' => __DIR__ . '/../../console/runtime/logs/server.pid',
@@ -92,13 +93,46 @@ return [
     ],
     'components' => [
         'log' => [
+            'flushInterval' => 1,
             'targets' => [
                 [
+                    'exportInterval' => 1,
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error', 'warning'],
+                    'levels' => ['info', 'error', 'warning'],
+                    'logVars' => [],//$_GET, $_POST,$_FILES, $_COOKIE, $_SESSION, $_SERVER
                 ],
             ],
         ],
+        'db' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=10.0.5.179;dbname=Im',
+            'username' => 'root',
+            'password' => 'root',
+            'charset' => 'utf8',
+        ],
+        'session' => [
+            'class' => 'yii\redis\Session',
+//            'timeout'=>3600,
+            'keyPrefix' => 'im_sess_',
+            'cookieParams' => [
+                'path' => '/',
+//                'domain' => ".qian.com",
+            ]
+        ],
+        'redisLocal' => [ //本地redis
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'localhost',
+            'port' => 6379,
+            'database' => 1,
+        ],
+        'redisShare' => [ //共享redis
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'localhost',
+            'port' => 6379,
+            'database' => 1,
+        ],
+
+
     ],
     'params' => $params,
 ];

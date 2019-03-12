@@ -1,9 +1,13 @@
 <?php
+
 namespace console\controllers;
 
 use yii\console\Controller;
 
 use yii\helpers\FileHelper;
+use yii\log\Logger;
+use Yii;
+
 class WSCenterController extends Controller
 {
     /**
@@ -59,7 +63,7 @@ class WSCenterController extends Controller
         'ssl_cert_file' => '',
         'ssl_key_file' => '',
         'pid_file' => '',
-        'buffer_output_size' => 2 * 1024 *1024, //配置发送输出缓存区内存尺寸
+        'buffer_output_size' => 2 * 1024 * 1024, //配置发送输出缓存区内存尺寸
         'heartbeat_check_interval' => 60,// 心跳检测秒数
         'heartbeat_idle_time' => 600,// 检查最近一次发送数据的时间和当前时间的差，大于则强行关闭
     ];
@@ -72,8 +76,7 @@ class WSCenterController extends Controller
      */
     public function actionStart()
     {
-        if ($this->getPid() !== false)
-        {
+        if ($this->getPid() !== false) {
             $this->stderr("服务已经启动...");
             exit(1);
         }
@@ -105,35 +108,35 @@ class WSCenterController extends Controller
     {
         $this->sendSignal(SIGTERM);
         $time = 0;
-        while (posix_getpgid($this->getPid()) && $time <= 10)
-        {
+        while (posix_getpgid($this->getPid()) && $time <= 10) {
             usleep(100000);
             $time++;
         }
-        if ($time > 100)
-        {
+        if ($time > 100) {
             $this->stderr("服务停止超时..." . PHP_EOL);
             exit(1);
         }
 
-        if( $this->getPid() === false )
-        {
+        if ($this->getPid() === false) {
             $this->stdout("服务重启成功..." . PHP_EOL);
-        }
-        else
-        {
+        } else {
             $this->stderr("服务停止错误, 请手动处理杀死进程..." . PHP_EOL);
         }
 
         $this->actionStart();
     }
+
     //重启所有的worker 和tasker
-    public function actionReload(){
+    public function actionReload()
+    {
         $this->sendSignal(SIGUSR1);
     }
-    public function actionReloadTask(){
+
+    public function actionReloadTask()
+    {
         $this->sendSignal(SIGUSR2);
     }
+
     /**
      * 发送信号
      *
@@ -141,12 +144,9 @@ class WSCenterController extends Controller
      */
     private function sendSignal($sig)
     {
-        if ($pid = $this->getPid())
-        {
+        if ($pid = $this->getPid()) {
             posix_kill($pid, $sig);
-        }
-        else
-        {
+        } else {
             $this->stdout("服务未运行..." . PHP_EOL);
             exit(1);
         }
@@ -160,15 +160,11 @@ class WSCenterController extends Controller
     private function getPid()
     {
         $pid_file = $this->config['pid_file'];
-        if (file_exists($pid_file))
-        {
+        if (file_exists($pid_file)) {
             $pid = file_get_contents($pid_file);
-            if (posix_getpgid($pid))
-            {
+            if (posix_getpgid($pid)) {
                 return $pid;
-            }
-            else
-            {
+            } else {
                 unlink($pid_file);
             }
         }
@@ -185,17 +181,31 @@ class WSCenterController extends Controller
     {
         $parentPid = getmypid();
         $pidDir = dirname($this->config['pid_file']);
-        if(!file_exists($pidDir)) FileHelper::createDirectory($pidDir);
+        if (!file_exists($pidDir)) FileHelper::createDirectory($pidDir);
         file_put_contents($this->config['pid_file'], $parentPid);
     }
 
-    public function actionT(){
-        AMQP_OS_SOCKET_TIMEOUT_ERRNO;
-        $mqConnection = new \AMQPConnection(['10.0.5.179', '5672', 'guest', 'guest']);
-        if (!$mqConnection->connect()) {
-            die("Cannot connect to the broker!\n");
-        }
-        $channel = new \AMQPChannel($mqConnection);
-        var_dump($channel);
+    public function actionT()
+    {
+//        Yii::$app->session->setId('puslf305qalqi898f8idid9bic');
+        Yii::$app->runAction('service/test/t');
+        exit;
+
+        Yii::$app->session->set('user_exam', ['exam_id' => 123, 'exam_type' => 456]);
+        Yii::$app->session->set('aaaaa', ['exam_id' => 123, 'exam_type' => 456]);
+        Yii::info( var_dump(Yii::$app->session->getId()));
+        var_dump(Yii::$app->session->get('aaaaa'));
+
+//        var_dump(Yii::$app->session->get());
+//        Yii::info('错误11，错误11，错误11');
+//        AMQP_OS_SOCKET_TIMEOUT_ERRNO;
+//        $mqConnection = new \AMQPConnection(['10.0.5.179', '5672', 'guest', 'guest']);
+//        if (!$mqConnection->connect()) {
+//            die("Cannot connect to the broker!\n");
+//        }
+//        $channel = new \AMQPChannel($mqConnection);
+//        var_dump($channel);
     }
+
+
 }

@@ -9,11 +9,10 @@ namespace console\controllers\service;
 use yii\console\Controller;
 class TestController extends Controller
 {
-    public function actionT(){
-        swoole_set_process_name('php '.' ws service/test');
-        while(1){
-            sleep(20);
-//            echo time()."\n";
-        }
+
+    public function actionT($fd){
+  echo $fd;
     }
+
+
 }

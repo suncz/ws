@@ -7,7 +7,7 @@
  */
 
 namespace console\swooleService;
-
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 abstract class MQBase
 {
     protected $_server;
@@ -25,6 +25,10 @@ abstract class MQBase
     {
         $this->_server = $server;
 
+        $this->_mqConnection = new AMQPStreamConnection('127.0.1', 5672, 'guest', 'guest');
+        $this->_mqChannel = $this->_mqConnection->channel();
+
+        $this->_maxLoop = 10;
     }
 
     //queue设置为自动删除

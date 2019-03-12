@@ -9,8 +9,7 @@
 namespace console\swooleService\IM;
 
 use console\swooleService\ServerBase;
-
-
+use Yii;
 class IMServer extends ServerBase
 {
 
@@ -45,65 +44,81 @@ class IMServer extends ServerBase
         return $this->tasker;
     }
 
-    public function setRealServer()
+    public function setWebSocketServer()
     {
         $config = $this->config;
 
         $server = new \swoole_websocket_server($this->config['host'], $this->config['port']);
-        $this->realServer=$server;
-        $this->realServer->set($this->config['setting']);
+        $this->webSocketServer=$server;
+        $this->webSocketServer->set($this->config['setting']);
 
         $server->on('Start', function ($server) use ($config) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[start] line:'.__LINE__);
            print('server start'."\n");
+            echo "pid master is:".$server->master_pid."\n";
             swoole_set_process_name('php ' . $config['serverName'] . ' master');
         });
 
         $server->on('ManagerStart', function ($server) use ($config) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[ManagerStart] line:'.__LINE__);
             print('ManagerStart'."\n");
+            echo "pid manager is:".$server->manager_pid."\n";
             swoole_set_process_name('php ' . $config['serverName'] . ' manager');
         });
 
         $server->on('ManagerStop', function ($server) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[ManagerStop] line:'.__LINE__);
             print('ManagerStop'."\n");
 
         });
-
+//
         $server->on('WorkerStart', function ($server, $workerId) {
 
+//            var_dump(get_included_files());
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[WorkerStart] line:'.__LINE__);
             if ($workerId < $this->config['setting']['worker_num']) {
-                print('worker start worker_id:' . $workerId."\n");
-                $this->worker = $this->getWorker($workerId);
+                Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[worker start] line:'.__LINE__);
+                print('worker start worker_id:' . $workerId."is taskerWorker".var_dump($server->taskworker)."\n");
+                $this->setWorker();
             } else {
-                print('tasker start worker_id:' . $workerId."\n");
-                $this->tasker = $this->getTasker($workerId);
+                Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[tasker start] line:'.__LINE__);
+                print('tasker start worker_id:' . $workerId."is taskerWorker".var_dump($server->taskworker)."\n");
+                $this->setTasker();
             }
         });
-
+//
         $server->on('WorkerError', function ($server, $workerId, $workerPid, $exitCode) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[WorkerError] line:'.__LINE__);
             print('workerId:' . $workerId . ' workerPid:' . $workerPid . ' exitCode:' . $exitCode);
         });
-
+//
         $server->on('WorkerStop', function ($server, $workerId) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[WorkerStop] line:'.__LINE__);
             print('workerId:' . $workerId . ' stop');
         });
         /*******************worker begin**************************/
         $server->on('Open', function ($server, $req) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Open] line:'.__LINE__);
             $this->worker->onConnect($server, $req);
         });
 
         $server->on('Message', function ($server, $frame) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Message] line:'.__LINE__);
             $this->worker->onCmdMessage($server, $frame);
         });
         /*******************worker end**************************/
 
         $server->on('Task', function ($server, $taskId, $fromId, $data) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Task] line:'.__LINE__);
             $this->tasker->onTask($server, $taskId, $fromId, $data);
         });
         //必须设置finish回调，不然启动不了
         $server->on('Finish', function ($server, $taskId, $data) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Finish] line:'.__LINE__);
         });
 
         $server->on('PipeMessage', function ($server, $fromWorkerId, $message) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[PipeMessage] line:'.__LINE__);
             if ($server->worker_id < $this->config['setting']['worker_num']) {
                 $this->worker->onPipeMessage($server, $fromWorkerId, $message);
             } else {
@@ -112,34 +127,35 @@ class IMServer extends ServerBase
         });
 
         $server->on('Close', function ($server, $fd) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Close] line:'.__LINE__);
+//                echo "client-{$fd} is closed\n";
             $this->worker->onDisconnect($server, $fd);
         });
 
         $server->on('Shutdown', function ($server) {
+            Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[Shutdown] line:'.__LINE__);
             print('server shutdown');
         });
+        Yii::info(print_r($server,true));
     }
 
-    public function getRealServer()
+    public function getWebSocketServer()
     {
-        // TODO: Implement getRealServer() method.
+            return $this->webSocketServer;
     }
 
     public function start()
     {
 
 
-        $this->realServer->start();
+        $this->webSocketServer->start();
     }
 
-    public function getServer()
-    {
-        return $this->server;
-    }
 
-    public function setServerId()
+
+    public function setServerIp()
     {
-        // TODO: Implement setServerId() method.
+        // TODO: Implement setserverIp() method.
         exec('ifconfig|grep -A 1 eth0|grep "inet addr"|awk \'{print $2}\'|awk -F : \'{print $2}\'', $out);
         if (!$out) {
             //centos
@@ -149,12 +165,12 @@ class IMServer extends ServerBase
             exec('ifconfig|grep -A 1 ens33|grep "inet"|awk \'{print $2}\'', $out);
         }
 
-        $this->serverId = isset($out[0])?$out[0]:'miss'.time();
+        $this->serverIp = isset($out[0])?$out[0]:'miss'.time();
     }
 
-    public function getServerId()
+    public function getServerIp()
     {
-        return $this->serverId;
+        return $this->serverIp;
     }
 
     public function getConfig()
@@ -172,8 +188,9 @@ class IMServer extends ServerBase
             $process = new \swoole_process(function () use ($className) {
                 (new $className($this))->process();
             });
-            $this->realServer->addProcess($process);
+            $this->webSocketServer->addProcess($process);
         }
     }
+
 
 }

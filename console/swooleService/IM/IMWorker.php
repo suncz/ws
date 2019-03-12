@@ -9,39 +9,75 @@
 namespace console\swooleService\IM;
 
 use console\swooleService\WorkerBase;
-
+use Yii;
+use console\controllers\service\UserController;
 
 class IMWorker extends WorkerBase
 {
 
-    public function __construct($server)
+    public $whenSocket = [
+        'tourist' => [
+            'outer' => true,
+            'room' => true,
+        ],
+        'loginUser' => [
+            'outer' => true,
+            'room' => true,
+        ]];
+    public function __construct(IMServer $imServer)
     {
-        parent::__construct($server);
+        parent::__construct($imServer);
 
     }
 
-    public function onConnect($server, $req)
+    public function onConnect($webSocketServer, $req)
     {
-        echo __CLASS__.'->'.__FUNCTION__."\n";
+        $sid = trim(@$req->get['sid']);
+        $uid = trim(@$req->get['uid']);
+        $rid = trim(@$req->get['rid']);
+        $mid = trim(@$req->get['mid']);
+
+        $fd=$req->fd;
+
+        Yii::$app->runAction('service/user/outerTourist',[$fd]);
+        //游客允许全站登陆
+//        if($this->whenSocket['tourist']['outer']){
+//            if(!$uid && !$rid && !$mid){
+//                Yii::$app->runAction('/service/user/outerTourist');
+//            }else{
+//                $data['code']=1001;
+//                $data['msg']='connect error';
+//                $webSocketServer->push($req->fd,json_encode($data));
+//                if (!$webSocketServer->exist($req->fd)) {
+//                    return;
+//                }
+//                $webSocketServer->after(200, function () use ($fd) {
+//                    $webSocketServer->close($fd, true);
+//                });
+//            }
+//
+//        }
+
+
     }
 
-    public function onCmdMessage($server, $frame)
+    public function onCmdMessage($webSocketServer, $frame)
     {
-        echo __CLASS__.'->'.__FUNCTION__."\n";
+
+        echo __CLASS__ . '->' . __FUNCTION__ . "\n";
 
     }
 
-    public function onPipeMessage($server, $fromWorkerId, $message)
+    public function onPipeMessage($webSocketServer, $fromWorkerId, $message)
     {
-        echo __CLASS__.'->'.__FUNCTION__."\n";
+        echo getmypid() . "---" . $webSocketServer->worker_id . "\n";
+        echo __CLASS__ . '->' . __FUNCTION__ . "\n";
     }
 
-    public function onDisconnect($server, $fd)
+    public function onDisconnect($webSocketServer, $fd)
     {
-        echo __CLASS__.'->'.__FUNCTION__."\n";
+        echo __CLASS__ . '->' . __FUNCTION__ . "\n";
     }
-
-
 
 
 }

@@ -10,14 +10,17 @@ class IMTasker extends TaskerBase
         parent::__construct($server);
     }
 
-    public function onTask($server, $taskId, $fromId, $data)
+    public function onTask($webSocketServer, $taskId, $fromId, $data)
     {
          while(1){
-             sleep(10);
+             echo "I am On task ,sleep(5)\b";
+             sleep(5);
              echo "111 \n";
+             break;
          }
     }
-    public function onPipeMessage($server, $fromWorkerId, $message)
+    public function onPipeMessage($webSocketServer, $fromWorkerId, $message)
     {
+        echo __CLASS__.'->'.__FUNCTION__."\n";
     }
 }

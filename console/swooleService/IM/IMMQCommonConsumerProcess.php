@@ -9,8 +9,9 @@ class IMMQCommonConsumerProcess extends MQBase
 
     public function handle($data)
     {
+        echo "handle pid is".getmypid()."/n";
         print_r($data);
-            echo 'handle; \n';
+            echo "handle; \n";
     }
 
 

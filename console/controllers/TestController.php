@@ -11,7 +11,7 @@ use yii\console\Controller;
 class TestController extends Controller
 {
     public function actionT(){
-        echo 111;
-        \Yii::$app->runAction('service/test/t');
+        $fd=123;
+        Yii::$app->runAction('service/user/outerTourist',[$fd]);
     }
 }

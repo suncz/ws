@@ -2,11 +2,13 @@
 
 namespace console\swooleService;
 
+use console\swooleService\IM\IMServer;
+
 abstract class WorkerBase
 {
 
     //框架server对象
-    protected $_server;
+    protected $iMServer;
 
     //当前客户端唯一标示符
     protected $_cid;
@@ -14,19 +16,19 @@ abstract class WorkerBase
     //当前网络句柄
     protected $_fd;
 
-    public function __construct($server)
+    public function __construct(IMServer $iMServer)
     {
-        $this->_server = $server;
-        swoole_set_process_name('php ' . $server->getConfig()['serverName'] . ' worker');
+        $this->iMServer = $iMServer;
+        swoole_set_process_name('php ' . $iMServer->getConfig()['serverName'] . ' worker');
     }
 
-    abstract public function onConnect($server, $req);
-    abstract public function onCmdMessage($server, $frame);
-    abstract public function onPipeMessage($server, $fromWorkerId, $message);
-    abstract public function onDisconnect($server, $fd);
+    abstract public function onConnect($webSocketServer, $req);
+    abstract public function onCmdMessage($webSocketServer, $frame);
+    abstract public function onPipeMessage($webSocketServer, $fromWorkerId, $message);
+    abstract public function onDisconnect($webSocketServer, $fd);
 
     protected function _getCid($fd) {
-        return $this->_server->getServerId(). '_' . $fd;
+        return $this->iMServer->getserverIp(). '_' . $fd;
     }
 
 }
