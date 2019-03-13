@@ -20,6 +20,9 @@ return [
             'class' => 'yii\console\controllers\FixtureController',
             'namespace' => 'common\fixtures',
         ],
+//        'user' => [
+//            'class' => 'console\controllers\service\UserController',
+//        ],
         'w-s-center' => [
             'class' => 'console\controllers\WSCenterController',
             'server' => 'console\swooleService\IM\IMServer', // 可替换为自己的业务类继承该类即可

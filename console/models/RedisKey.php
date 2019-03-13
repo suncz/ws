@@ -6,7 +6,7 @@
  * Time: 15:23
  */
 
-namespace console\models\bll;
+namespace console\models;
 class RedisKey
 {
     /**********************local redis***********************/

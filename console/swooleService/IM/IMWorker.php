@@ -10,7 +10,7 @@ namespace console\swooleService\IM;
 
 use console\swooleService\WorkerBase;
 use Yii;
-use console\controllers\service\UserController;
+use console\controllers\service;
 
 class IMWorker extends WorkerBase
 {
@@ -39,7 +39,11 @@ class IMWorker extends WorkerBase
 
         $fd=$req->fd;
 
-        Yii::$app->runAction('service/user/outerTourist',[$fd]);
+        Yii::$app->runAction('service/user/outer-tourist');
+        $webSocketServer->push($req->fd,json_encode([1,2,4]));
+        $webSocketServer->after(200, function () use ($fd) {
+                    $this->iMServer->getWebSocketServer()->close($fd, true);
+        });
         //游客允许全站登陆
 //        if($this->whenSocket['tourist']['outer']){
 //            if(!$uid && !$rid && !$mid){

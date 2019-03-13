@@ -7,11 +7,10 @@
  */
 namespace console\controllers;
 use yii\console\Controller;
-
+use Yii;
 class TestController extends Controller
 {
     public function actionT(){
-        $fd=123;
-        Yii::$app->runAction('service/user/outerTourist',[$fd]);
+        Yii::$app->runAction('user/outer-tourist');
     }
 }
