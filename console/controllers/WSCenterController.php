@@ -85,8 +85,8 @@ class WSCenterController extends Controller
         $this->setPid();
 
         // 运行
-        $IMServer = new $this->server($this->config);
-        $IMServer->templateMethod();
+        $iMServer = new $this->server($this->config);
+        $iMServer->templateMethod();
         $this->stdout("服务正在运行,监听 {$this->host}:{$this->port}" . PHP_EOL);
     }
 

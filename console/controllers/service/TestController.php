@@ -10,8 +10,8 @@ use yii\console\Controller;
 class TestController extends Controller
 {
 
-    public function actionT($fd){
-  echo $fd;
+    public function actionT(){
+         return 124;
     }
 
 

@@ -8,26 +8,24 @@
 
 namespace console\swooleService\IM;
 
+use console\models\bll\UserBll;
+use console\models\common\Cmd;
+use console\models\common\Code;
+use console\models\common\RedisKey;
 use console\swooleService\WorkerBase;
+use console\libs\Tools;
 use Yii;
 use console\controllers\service;
 
 class IMWorker extends WorkerBase
 {
 
-    public $whenSocket = [
-        'tourist' => [
-            'outer' => true,
-            'room' => true,
-        ],
-        'loginUser' => [
-            'outer' => true,
-            'room' => true,
-        ]];
-    public function __construct(IMServer $imServer)
-    {
-        parent::__construct($imServer);
 
+    static public $serverIp;
+
+    public function __construct(IMServer $iMServer)
+    {
+        parent::__construct($iMServer);
     }
 
     public function onConnect($webSocketServer, $req)
@@ -36,31 +34,34 @@ class IMWorker extends WorkerBase
         $uid = trim(@$req->get['uid']);
         $rid = trim(@$req->get['rid']);
         $mid = trim(@$req->get['mid']);
-
-        $fd=$req->fd;
-
-        Yii::$app->runAction('service/user/outer-tourist');
-        $webSocketServer->push($req->fd,json_encode([1,2,4]));
-        $webSocketServer->after(200, function () use ($fd) {
-                    $this->iMServer->getWebSocketServer()->close($fd, true);
-        });
-        //游客允许全站登陆
-//        if($this->whenSocket['tourist']['outer']){
-//            if(!$uid && !$rid && !$mid){
-//                Yii::$app->runAction('/service/user/outerTourist');
-//            }else{
-//                $data['code']=1001;
-//                $data['msg']='connect error';
-//                $webSocketServer->push($req->fd,json_encode($data));
-//                if (!$webSocketServer->exist($req->fd)) {
-//                    return;
-//                }
-//                $webSocketServer->after(200, function () use ($fd) {
-//                    $webSocketServer->close($fd, true);
-//                });
-//            }
-//
-//        }
+        if($sid){
+            Yii::$app->session->setId($sid);
+        }
+//    print_r($req);
+        $fd = $req->fd;
+        do {
+//            $webSocketServer->push($req->fd, json_encode([1, 2, 4]));
+//            $webSocketServer->after(200, function () use ($fd) {
+//                $this->iMServer->getWebSocketServer()->close($fd, true);
+//            });
+            service\UserController::$imServer = $this->iMServer;
+            //游客
+            try {
+                $isPass=UserBll::connectCanPass($fd,$sid,$uid,$rid);
+                if ($isPass === false) {
+                    $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, Code::CONNECT_FAIL));
+                    $webSocketServer->after(200, function () use ($fd) {
+                        $this->iMServer->getWebSocketServer()->close($fd, true);
+                    });
+                }else{
+                    $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, 200,'ok'));
+                }
+            } catch (\Exception $e) {
+                print_r($e->getMessage());
+                echo $e->getTraceAsString();
+                break;
+            }
+        } while (false);
 
 
     }
@@ -77,10 +78,35 @@ class IMWorker extends WorkerBase
         echo getmypid() . "---" . $webSocketServer->worker_id . "\n";
         echo __CLASS__ . '->' . __FUNCTION__ . "\n";
     }
-
+    //断开连接清理用户信息
     public function onDisconnect($webSocketServer, $fd)
     {
         echo __CLASS__ . '->' . __FUNCTION__ . "\n";
+
+        $rid=Yii::$app->redisLocal->hget(RedisKey::ROOM_MAP_HASH,$fd);
+        if($rid){//房间
+            //删除房间登陆用户
+            Yii::$app->redisLocal->hdel(RedisKey::roomMemberKey($rid),$fd);
+            //删除房间游客
+            Yii::$app->redisLocal->srem(RedisKey::getRoomTouristKey($rid),$fd);
+
+
+            $memberJson=Yii::$app->redisLocal->hget(RedisKey::roomMemberKey($rid),$fd);
+            $arrMember=json_decode($memberJson);
+            if($arrMember){//房间登陆用户
+                $uid=$arrMember['uid'];
+                //删除用户信息
+                Yii::$app->redisShare->del(RedisKey::getUserHashKey($uid));
+            }
+        }
+        //删除房间外登陆用户
+        Yii::$app->redisLocal->srem(RedisKey::OUTER_USER_SET,$fd);
+        //删除roomMap
+        Yii::$app->redisLocal->hdel(RedisKey::ROOM_MAP_HASH,$fd);
+        //删除房间外游客
+        Yii::$app->redisLocal->srem(RedisKey::OUT_TOURIST_SET,$fd);
+        //删除在线房间列表用户
+        Yii::$app->redisShare->zrem(RedisKey::ROOM_ONLINE_USER_ZSET,$fd);
     }
 
 

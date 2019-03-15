@@ -10,7 +10,8 @@ use yii\console\Controller;
 
 class Test1Controller extends Controller
 {
-    public function actionT(){
-        echo 222222;
+    public function actionT($data){
+        var_dump($data);
+       return 124;
     }
 }

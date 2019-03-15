@@ -38,10 +38,10 @@ return [
                 'log_level' => 0,
                 'setting' => array(
                     'daemonize' => false,// 守护进程执行
-                    'worker_num' => 4,
-                    'task_worker_num' => 2,
-                    'max_request' => 500,
-                    'task_max_request' => 500,
+                    'worker_num' => 1,
+                    'task_worker_num' => 1,
+                    'max_request' => 1,
+                    'task_max_request' => 1,
                     'backlog' => 128,
                     'heartbeat_idle_time' => 300,
                     'heartbeat_check_interval' => 60,
@@ -108,7 +108,7 @@ return [
         ],
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=10.0.5.179;dbname=Im',
+            'dsn' => 'mysql:host=10.0.5.179;dbname=im',
             'username' => 'root',
             'password' => 'root',
             'charset' => 'utf8',
@@ -116,7 +116,8 @@ return [
         'session' => [
             'class' => 'yii\redis\Session',
 //            'timeout'=>3600,
-            'keyPrefix' => 'im_sess_',
+            'keyPrefix' => 'sid_',
+//            'database' => 0,
             'cookieParams' => [
                 'path' => '/',
 //                'domain' => ".qian.com",
@@ -126,13 +127,13 @@ return [
             'class' => 'yii\redis\Connection',
             'hostname' => 'localhost',
             'port' => 6379,
-            'database' => 1,
+            'database' => 0,
         ],
         'redisShare' => [ //共享redis
             'class' => 'yii\redis\Connection',
             'hostname' => 'localhost',
             'port' => 6379,
-            'database' => 1,
+            'database' => 0,
         ],
 
 
