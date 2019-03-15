@@ -37,13 +37,9 @@ class IMWorker extends WorkerBase
         if($sid){
             Yii::$app->session->setId($sid);
         }
-//    print_r($req);
+
         $fd = $req->fd;
         do {
-//            $webSocketServer->push($req->fd, json_encode([1, 2, 4]));
-//            $webSocketServer->after(200, function () use ($fd) {
-//                $this->iMServer->getWebSocketServer()->close($fd, true);
-//            });
             service\UserController::$imServer = $this->iMServer;
             //游客
             try {
