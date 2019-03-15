@@ -8,24 +8,30 @@
 
 namespace console\swooleService\IM;
 
-use console\models\bll\UserBll;
-use console\models\common\Cmd;
-use console\models\common\Code;
-use console\models\common\RedisKey;
+use console\swooleService\MyTools;
 use console\swooleService\WorkerBase;
-use console\libs\Tools;
+use Exception;
+use function function_exists;
+use function var_dump;
 use Yii;
 use console\controllers\service;
 
 class IMWorker extends WorkerBase
 {
 
-
-    static public $serverIp;
-
-    public function __construct(IMServer $iMServer)
+    public $whenSocket = [
+        'tourist' => [
+            'outer' => true,
+            'room' => true,
+        ],
+        'loginUser' => [
+            'outer' => true,
+            'room' => true,
+        ]];
+    public function __construct(IMServer $imServer)
     {
-        parent::__construct($iMServer);
+        parent::__construct($imServer);
+
     }
 
     public function onConnect($webSocketServer, $req)
@@ -68,8 +74,16 @@ class IMWorker extends WorkerBase
 
     public function onCmdMessage($webSocketServer, $frame)
     {
-
-        echo __CLASS__ . '->' . __FUNCTION__ . "\n";
+        try{
+            //检查通信协议格式
+            $data=MyTools::checkProtocol($frame['data']);
+            //调用路由
+            $re=Yii::$app->runAction('service/'.$data['cmd'],$data);
+            //格式化输出
+            $responseData= MyTools::response($data['cmd'],$re);
+        }catch (Exception $e){
+            $responseData= MyTools::response($data['cmd']??"unknown",$e->getCode());
+        }
 
     }
 

@@ -28,7 +28,7 @@ return [
             'server' => 'console\swooleService\IM\IMServer', // 可替换为自己的业务类继承该类即可
             'config' => [// 标准的swoole配置项都可以再此加入
                 'host' => '0.0.0.0',// 监听地址
-                'port' => 9501,// 监听端口
+                'port' => 9527,// 监听端口
                 'type' => 'ws', // 默认为ws连接，可修改为wss
                 'serverName' => 'ws',
                 // 'ssl_cert_file' => '',

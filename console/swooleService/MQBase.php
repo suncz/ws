@@ -25,7 +25,7 @@ abstract class MQBase
     {
         $this->_server = $server;
 
-        $this->_mqConnection = new AMQPStreamConnection('127.0.1', 5672, 'guest', 'guest');
+        $this->_mqConnection = new AMQPStreamConnection('rabbitMQ', 5672, 'guest', 'guest');
         $this->_mqChannel = $this->_mqConnection->channel();
 
         $this->_maxLoop = 10;
