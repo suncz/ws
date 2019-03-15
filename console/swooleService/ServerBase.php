@@ -20,7 +20,7 @@ abstract class ServerBase
     { // 模板方法 调用基本方法组装顶层逻辑
         $this->setServerIp();
         $this->setwebSocketServer();
-        $this->initMQProcess();
+        //$this->initMQProcess();
         $this->start();
     }
 
