@@ -6,8 +6,8 @@
  * Time: 17:56
  */
 
-namespace console\models\common;
-
+//namespace console\swooleService\IM\libs;
+namespace  console\swooleService\IM\libs;
 
 class Code
 {

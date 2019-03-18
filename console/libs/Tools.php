@@ -8,7 +8,7 @@
 
 namespace console\libs;
 
-use console\models\common\Code;
+use console\swooleService\IM\libs\Code;
 
 class Tools
 {

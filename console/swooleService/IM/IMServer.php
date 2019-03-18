@@ -8,6 +8,7 @@
 
 namespace console\swooleService\IM;
 
+use console\swooleService\Message;
 use console\swooleService\ServerBase;
 use Yii;
 class IMServer extends ServerBase
@@ -73,13 +74,14 @@ class IMServer extends ServerBase
         });
 //
         $server->on('WorkerStart', function ($server, $workerId) {
-
+            Message::$iMServer=$server;
 //            var_dump(get_included_files());
             Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[WorkerStart] line:'.__LINE__);
             if ($workerId < $this->config['setting']['worker_num']) {
                 Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[worker start] line:'.__LINE__);
                 print('worker start worker_id:' . $workerId."is taskerWorker".var_dump($server->taskworker)."\n");
                 $this->setWorker();
+
             } else {
                 Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[tasker start] line:'.__LINE__);
                 print('tasker start worker_id:' . $workerId."is taskerWorker".var_dump($server->taskworker)."\n");

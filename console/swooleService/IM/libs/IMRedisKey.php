@@ -6,8 +6,9 @@
  * Time: 15:23
  */
 
-namespace console\models\common;
-class RedisKey
+//namespace console\swooleService\IM\libs;
+namespace  console\swooleService\IM\libs;
+class IMRedisKey
 {
     /**********************local redis***********************/
     const ROOM_MEMBER_HASH = 'room:member:{rid}';//有登录态的房间用户

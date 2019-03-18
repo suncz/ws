@@ -15,6 +15,10 @@ use function function_exists;
 use function var_dump;
 use Yii;
 use console\controllers\service;
+use console\libs\Tools;
+use console\swooleService\IM\libs\Cmd;
+use console\swooleService\IM\libs\Code;
+use console\swooleService\IM\libs\IMRedisKey;
 
 class IMWorker extends WorkerBase
 {
@@ -28,9 +32,9 @@ class IMWorker extends WorkerBase
             'outer' => true,
             'room' => true,
         ]];
-    public function __construct(IMServer $imServer)
+    public function __construct(IMServer $iMServer)
     {
-        parent::__construct($imServer);
+        parent::__construct($iMServer);
 
     }
 
@@ -46,10 +50,10 @@ class IMWorker extends WorkerBase
 
         $fd = $req->fd;
         do {
-            service\UserController::$imServer = $this->iMServer;
+            service\UserController::$iMServer = $this->iMServer;
             //游客
             try {
-                $isPass=UserBll::connectCanPass($fd,$sid,$uid,$rid);
+                $isPass=Yii::$app->runAction('service/user/connect',[$fd,$sid,$uid,$rid,$mid]);
                 if ($isPass === false) {
                     $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, Code::CONNECT_FAIL));
                     $webSocketServer->after(200, function () use ($fd) {
@@ -59,8 +63,7 @@ class IMWorker extends WorkerBase
                     $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, 200,'ok'));
                 }
             } catch (\Exception $e) {
-                print_r($e->getMessage());
-                echo $e->getTraceAsString();
+                Yii::error($e->getTraceAsString());
                 break;
             }
         } while (false);
@@ -93,30 +96,30 @@ class IMWorker extends WorkerBase
     {
         echo __CLASS__ . '->' . __FUNCTION__ . "\n";
 
-        $rid=Yii::$app->redisLocal->hget(RedisKey::ROOM_MAP_HASH,$fd);
+        $rid=Yii::$app->redisLocal->hget(IMRedisKey::ROOM_MAP_HASH,$fd);
         if($rid){//房间
             //删除房间登陆用户
-            Yii::$app->redisLocal->hdel(RedisKey::roomMemberKey($rid),$fd);
+            Yii::$app->redisLocal->hdel(IMRedisKey::roomMemberKey($rid),$fd);
             //删除房间游客
-            Yii::$app->redisLocal->srem(RedisKey::getRoomTouristKey($rid),$fd);
+            Yii::$app->redisLocal->srem(IMRedisKey::getRoomTouristKey($rid),$fd);
 
 
-            $memberJson=Yii::$app->redisLocal->hget(RedisKey::roomMemberKey($rid),$fd);
+            $memberJson=Yii::$app->redisLocal->hget(IMRedisKey::roomMemberKey($rid),$fd);
             $arrMember=json_decode($memberJson);
             if($arrMember){//房间登陆用户
                 $uid=$arrMember['uid'];
                 //删除用户信息
-                Yii::$app->redisShare->del(RedisKey::getUserHashKey($uid));
+                Yii::$app->redisShare->del(IMRedisKey::getUserHashKey($uid));
             }
         }
         //删除房间外登陆用户
-        Yii::$app->redisLocal->srem(RedisKey::OUTER_USER_SET,$fd);
+        Yii::$app->redisLocal->srem(IMRedisKey::OUTER_USER_SET,$fd);
         //删除roomMap
-        Yii::$app->redisLocal->hdel(RedisKey::ROOM_MAP_HASH,$fd);
+        Yii::$app->redisLocal->hdel(IMRedisKey::ROOM_MAP_HASH,$fd);
         //删除房间外游客
-        Yii::$app->redisLocal->srem(RedisKey::OUT_TOURIST_SET,$fd);
+        Yii::$app->redisLocal->srem(IMRedisKey::OUT_TOURIST_SET,$fd);
         //删除在线房间列表用户
-        Yii::$app->redisShare->zrem(RedisKey::ROOM_ONLINE_USER_ZSET,$fd);
+        Yii::$app->redisShare->zrem(IMRedisKey::ROOM_ONLINE_USER_ZSET,$fd);
     }
 
 

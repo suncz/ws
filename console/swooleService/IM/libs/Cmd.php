@@ -6,11 +6,12 @@
  * Time: 17:51
  */
 
-namespace console\models\common;
+//namespace console\swooleService\IM\libs;
+namespace  console\swooleService\IM\libs;
 
 /**
  * Class Cmd
- * @package console\models\common
+ * @package console\swooleService\IM\libs
  * 下发命令必须以d字母开头
  */
 class Cmd
