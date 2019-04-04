@@ -48,11 +48,10 @@ class IMServer extends ServerBase
     public function setWebSocketServer()
     {
         $config = $this->config;
-
         $server = new \swoole_websocket_server($this->config['host'], $this->config['port']);
         $this->webSocketServer=$server;
         $this->webSocketServer->set($this->config['setting']);
-
+        Message::$iMServer=$this;
         $server->on('Start', function ($server) use ($config) {
             Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[start] line:'.__LINE__);
            print('server start'."\n");
@@ -74,7 +73,7 @@ class IMServer extends ServerBase
         });
 //
         $server->on('WorkerStart', function ($server, $workerId) {
-            Message::$iMServer=$server;
+
 //            var_dump(get_included_files());
             Yii::info('[pid is:'.getmypid().']'.get_class().'->'.__FUNCTION__.'-'.'[WorkerStart] line:'.__LINE__);
             if ($workerId < $this->config['setting']['worker_num']) {

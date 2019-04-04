@@ -9,20 +9,20 @@
 namespace console\swooleService\IM;
 
 
-use console\swooleService\Errors;
+use console\swooleService\ErrorsBase;
 
-class IMErrors extends Errors
+class IMErrors extends ErrorsBase
 {
-    static private $errInfo=[
-        self::SYSTEM_ERROR=>"系统错误",
-        self::ILLEGAL_REQUEST=>"请求非法"
+
+    const OK = 0;
+    const CONNECT_FAIL = -1000;
+    const CONNECT_OTHER = -1001;
+    public static $msg = [
+        self::OK => 'ok',
+        self::ILLEGAL_REQUEST=>'请求错误',
+        self::SYSTEM_ERROR=>'系统错误',
+        self::CONNECT_FAIL => '连接失败',
+        self::CONNECT_OTHER => '其他地方登陆'
     ];
-   static public function getErrorInfo($code){
-       return self::$errInfo[$code]??"未知错误";
-   }
 
-   static public function checkParams($data){
-
-       return true;
-   }
 }

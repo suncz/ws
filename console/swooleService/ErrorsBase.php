@@ -9,8 +9,9 @@
 namespace console\swooleService;
 
 
-abstract class Errors
+abstract class ErrorsBase
 {
-    const SYSTEM_ERROR = 500;
-    const ILLEGAL_REQUEST = 501;
+    const SYSTEM_ERROR = -100;
+    const ILLEGAL_REQUEST = -101;
+
 }

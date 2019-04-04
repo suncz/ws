@@ -9,11 +9,11 @@
 namespace console\swooleService;
 
 
-abstract class Response
+abstract class ResponseBase
 {
     /**
      * 输出数据格式化
      * @param $format
      */
-   abstract public function Format($format);
+   abstract public static function wsOutput($cmd, $code, $msg = null, $data = null);
 }

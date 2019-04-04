@@ -8,6 +8,8 @@
 
 namespace console\swooleService\IM;
 
+use console\swooleService\IM\libs\UserCenter;
+use console\swooleService\Message;
 use console\swooleService\MyTools;
 use console\swooleService\WorkerBase;
 use Exception;
@@ -15,7 +17,7 @@ use function function_exists;
 use function var_dump;
 use Yii;
 use console\controllers\service;
-use console\libs\Tools;
+
 use console\swooleService\IM\libs\Cmd;
 use console\swooleService\IM\libs\Code;
 use console\swooleService\IM\libs\IMRedisKey;
@@ -25,13 +27,14 @@ class IMWorker extends WorkerBase
 
     public $whenSocket = [
         'tourist' => [
-            'outer' => true,
+            'outer' => false,
             'room' => true,
         ],
         'loginUser' => [
             'outer' => true,
             'room' => true,
         ]];
+
     public function __construct(IMServer $iMServer)
     {
         parent::__construct($iMServer);
@@ -44,25 +47,27 @@ class IMWorker extends WorkerBase
         $uid = trim(@$req->get['uid']);
         $rid = trim(@$req->get['rid']);
         $mid = trim(@$req->get['mid']);
-        if($sid){
+        if ($sid) {
             Yii::$app->session->setId($sid);
         }
-
         $fd = $req->fd;
         do {
-            service\UserController::$iMServer = $this->iMServer;
             //游客
             try {
-                $isPass=Yii::$app->runAction('service/user/connect',[$fd,$sid,$uid,$rid,$mid]);
-                if ($isPass === false) {
-                    $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, Code::CONNECT_FAIL));
-                    $webSocketServer->after(200, function () use ($fd) {
+
+                $result = Yii::$app->runAction('service/user/connect', [$fd, $sid, $uid, $rid, $mid]);
+
+                $isPass=$result->data['isPass'];
+                if ($isPass == false) {
+                    $webSocketServer->push($fd, IMResponse::wsOutput(Cmd::D_CONNET, IMErrors::CONNECT_FAIL));
+                    $webSocketServer->after(2000, function () use ($fd) {
                         $this->iMServer->getWebSocketServer()->close($fd, true);
                     });
-                }else{
-                    $webSocketServer->push($fd, Tools::wsOutput(Cmd::D_CONNET, 200,'ok'));
+                } else {
+                    $webSocketServer->push($fd, IMResponse::wsOutput(Cmd::D_CONNET, 200, 'ok'));
                 }
             } catch (\Exception $e) {
+                echo $e->getTraceAsString();
                 Yii::error($e->getTraceAsString());
                 break;
             }
@@ -71,19 +76,31 @@ class IMWorker extends WorkerBase
 
     }
 
+    /**
+     * @param $webSocketServer
+     * @param $frame
+     * @author: sunny <sunny@guojiang.tv>
+     * @Date: 2019/3/26 14:29
+     */
     public function onCmdMessage($webSocketServer, $frame)
     {
-        try{
+        try {
+            echo $frame->data."\n";
             //检查通信协议格式
-            $data=MyTools::checkProtocol($frame['data']);
-            //调用路由
-            $re=Yii::$app->runAction('service/'.$data['cmd'],$data);
-            //格式化输出
-            $responseData= MyTools::response($data['cmd'],$re);
-        }catch (Exception $e){
-            $responseData= MyTools::response($data['cmd']??"unknown",$e->getCode());
+            $data = IMRequest::input($frame->data);
+        } catch (Exception $e) {
+            $data['cmd'] = Cmd::D_REQUEST_FAIL;
+            Message::sendSingleMessage($frame->fd, IMResponse::wsOutput(Cmd::D_REQUEST_FAIL, $e->getCode(), $e->getMessage()));
+            return;
         }
-
+        try {
+            //调用路由
+            $jsonData['fromFd']=$frame->fd;
+            $jsonData['data']=$data->d;
+            Yii::$app->runAction('service/' . $data->cmd, [json_encode($jsonData)]);
+        } catch (Exception $e) {
+            Message::sendSingleMessage($frame->fd, IMResponse::wsOutput(Cmd::D_SYS_FAIL, $e->getCode(), $e->getMessage()));
+        }
     }
 
     public function onPipeMessage($webSocketServer, $fromWorkerId, $message)
@@ -91,35 +108,13 @@ class IMWorker extends WorkerBase
         echo getmypid() . "---" . $webSocketServer->worker_id . "\n";
         echo __CLASS__ . '->' . __FUNCTION__ . "\n";
     }
+
     //断开连接清理用户信息
     public function onDisconnect($webSocketServer, $fd)
     {
         echo __CLASS__ . '->' . __FUNCTION__ . "\n";
+        UserCenter::clear($fd);
 
-        $rid=Yii::$app->redisLocal->hget(IMRedisKey::ROOM_MAP_HASH,$fd);
-        if($rid){//房间
-            //删除房间登陆用户
-            Yii::$app->redisLocal->hdel(IMRedisKey::roomMemberKey($rid),$fd);
-            //删除房间游客
-            Yii::$app->redisLocal->srem(IMRedisKey::getRoomTouristKey($rid),$fd);
-
-
-            $memberJson=Yii::$app->redisLocal->hget(IMRedisKey::roomMemberKey($rid),$fd);
-            $arrMember=json_decode($memberJson);
-            if($arrMember){//房间登陆用户
-                $uid=$arrMember['uid'];
-                //删除用户信息
-                Yii::$app->redisShare->del(IMRedisKey::getUserHashKey($uid));
-            }
-        }
-        //删除房间外登陆用户
-        Yii::$app->redisLocal->srem(IMRedisKey::OUTER_USER_SET,$fd);
-        //删除roomMap
-        Yii::$app->redisLocal->hdel(IMRedisKey::ROOM_MAP_HASH,$fd);
-        //删除房间外游客
-        Yii::$app->redisLocal->srem(IMRedisKey::OUT_TOURIST_SET,$fd);
-        //删除在线房间列表用户
-        Yii::$app->redisShare->zrem(IMRedisKey::ROOM_ONLINE_USER_ZSET,$fd);
     }
 
 

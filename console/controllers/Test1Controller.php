@@ -7,11 +7,18 @@
  */
 namespace console\controllers;
 use yii\console\Controller;
-
+use Yii;
 class Test1Controller extends Controller
 {
-    public function actionT($data){
-        var_dump($data);
-       return 124;
+    public function actionT(){
+    }
+    public function actionA(){
+
+      var_dump(Yii::$app->runAction('test1/t'));
+
+    }
+
+    static function  ccc(){
+        return false;
     }
 }
