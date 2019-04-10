@@ -7,7 +7,9 @@
  */
 
 namespace console\swooleService;
+
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+
 abstract class MQBase
 {
     protected $_server;
@@ -20,12 +22,13 @@ abstract class MQBase
 
     protected $_maxLoop = 10;
     protected $_currentLoop = 0;
+    public $queueConfig;
 
     public function __construct($server)
     {
         $this->_server = $server;
 
-        $this->_mqConnection = new AMQPStreamConnection('rabbitMQ', 5672, 'guest', 'guest');
+        $this->_mqConnection = new AMQPStreamConnection('10.0.5.179', 5672, 'guest', 'guest');
         $this->_mqChannel = $this->_mqConnection->channel();
 
         $this->_maxLoop = 10;
@@ -38,28 +41,32 @@ abstract class MQBase
     public function process()
     {
         $className = get_class($this);
-        swoole_set_process_name('php ws'.' '.$className);
+        swoole_set_process_name('php ws' . ' ' . $className);
         pcntl_signal(SIGUSR1, function ($signo) use ($className) {
-            Logger::info('stopping '.$className.posix_getpid());
+            Logger::info('stopping ' . $className . posix_getpid());
             $this->_stop = true;
 
             //如果不在处理，则立即停止
             if (!$this->_isProcessing) {
                 $this->_mqChannel->close();
                 $this->_mqConnection->close();
-                Logger::info($className.'('.posix_getpid().') stopped');
+                Logger::info($className . '(' . posix_getpid() . ') stopped');
                 exit;
             }
         });
 
         //队列连接断开自动删除
-        $this->_mqChannel->queue_declare($this->_getQueueName());
-        $this->_mqChannel->exchange_declare($this->_getExchangeName(), $this->_getExchangeType(), false, false, false);
-        $this->_mqChannel->queue_bind($this->_getQueueName(), $this->_getExchangeName());
+        $this->_mqChannel->queue_declare($this->queueConfig['queueName']);
+        foreach ($this->queueConfig['relationExchange'] as $exchangeInfo) {
+            print_r($exchangeInfo);
+            $this->_mqChannel->exchange_declare($exchangeInfo['exchangeName'], $exchangeInfo['exchangeType'], false, $exchangeInfo['durable'], false);
+            $this->_mqChannel->queue_bind($this->queueConfig['queueName'], $exchangeInfo['exchangeName'],$exchangeInfo['routingKey']);
+        }
 
-        print_r($className.'('.posix_getpid().') consume queue of '.$this->_getQueueName());
 
-        $this->_mqChannel->basic_consume($this->_getQueueName(), '', false, false, false, false, function ($message) use ($className) {
+        print_r($className . '(' . posix_getpid() . ') consume queue of ' . $this->queueConfig['queueName']);
+
+        $this->_mqChannel->basic_consume($this->queueConfig['queueName'], '', false, false, false, false, function ($message) use ($className) {
 
             $this->_isProcessing = true;
 
@@ -79,6 +86,8 @@ abstract class MQBase
             }
 
             ++$this->_currentLoop;
+            echo "max loop is:".$this->_maxLoop."\n";
+            echo "current loop is:".$this->_currentLoop."\n";
             if ($this->_maxLoop && $this->_currentLoop >= $this->_maxLoop) {
                 break;
             }
@@ -87,11 +96,8 @@ abstract class MQBase
         $this->_mqChannel->close();
         $this->_mqConnection->close();
 
-        print_r($className.'('.posix_getpid().') stopped');
+        print_r($className . '(' . posix_getpid() . ') stopped');
     }
 
     abstract public function handle($data);
-    abstract protected function _getQueueName();
-    abstract protected function _getExchangeName();
-    abstract protected function _getExchangeType();
 }

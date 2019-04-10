@@ -10,6 +10,7 @@ namespace console\swooleService\IM;
 
 use console\swooleService\Message;
 use console\swooleService\ServerBase;
+use IMMQProducer;
 use Yii;
 class IMServer extends ServerBase
 {
@@ -147,8 +148,7 @@ class IMServer extends ServerBase
 
     public function start()
     {
-
-
+        $this->initMQProcess();
         $this->webSocketServer->start();
     }
 
@@ -181,7 +181,7 @@ class IMServer extends ServerBase
 
     protected function initMQProcess()
     {
-        $this->createMQProcess('\console\swooleService\IM\IMMQCommonConsumerProcess',2);
+        $this->createMQProcess('\console\swooleService\IM\IMMQMsgConsumerProcess',2);
     }
     protected function createMQProcess($className, $num)
     {
@@ -190,6 +190,12 @@ class IMServer extends ServerBase
                 (new $className($this))->process();
             });
             $this->webSocketServer->addProcess($process);
+        }
+    }
+    public function setMQProducer()
+    {
+        if (!$this->mqProducer) {
+            $this->mqProducer = new IMMQProducer($this);
         }
     }
 
