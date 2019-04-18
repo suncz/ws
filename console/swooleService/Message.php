@@ -35,7 +35,7 @@ class Message
      * @Date: 2019/3/18 11:56
      * @return bool
      */
-    static function sendSingleMessage($toFd, $jsonMessage, $isDelayClose = false)
+    static function sendMessageSingle($toFd, $jsonMessage, $isDelayClose = false)
     {
 
         if (!self::$iMServer->getWebSocketServer()->exist($toFd)) {
@@ -58,17 +58,17 @@ class Message
      * @author: sunny <sunny@guojiang.tv>
      * @Date: 2019/3/18 12:12
      */
-    static function sendRoomMessage($roomId, $jsonMessage)
+    static function sendMessageRoomLoginer($roomId, $jsonMessage)
     {
         $key = IMRedisKey::roomMemberKey($roomId);
         $roomMember = Yii::$app->redisLocal->hgetall($key);
         print_r($roomMember);
         foreach ($roomMember as $v) {
-            $arr = json_decode($v);
-            $fd = $v['fd'];
-            if (!self::$iMServer->getWebSocketServer()->exist($v['fd'])) {
+            $arr = json_decode($v,true);
+            $fd = $arr['fd'];
+            if (!self::$iMServer->getWebSocketServer()->exist($arr['fd'])) {
                 Yii::info('fd not exist' . $v);
-                UserCenter::clear($v['fd']);
+                UserCenter::clear($arr['fd']);
                 continue;
             } else {
                 self::$iMServer->getWebSocketServer()->push($fd, $jsonMessage);
@@ -77,7 +77,7 @@ class Message
         }
     }
 
-    static function sendRoomTouristMessage($roomId, $jsonMessage)
+    static function sendMessageRoomTourist($roomId, $jsonMessage)
     {
         $touristFds = Yii::$app->redisLocal->smembers(IMRedisKey::getRoomTouristKey($roomId));
         var_dump($touristFds);
@@ -101,7 +101,7 @@ class Message
      * @author: sunny <sunny@guojiang.tv>
      * @Date: 2019/4/1 12:01
      */
-    static function sendOuterTouristMessage($jsonMessage)
+    static function sendMessageOuterTourist($jsonMessage)
     {
         $fds = Yii::$app->redisLocal->smembers(IMRedisKey::OUTER_TOURIST_SET);
 
@@ -117,11 +117,14 @@ class Message
         }
     }
 
-    static function sendOuterLoginerMessage($jsonMessage)
+    static function sendMessageOuterLoginer($jsonMessage)
     {
-        $fds = Yii::$app->redisLocal->smemebers(IMRedisKey::OUTER_USER_SET);
+        $fds = Yii::$app->redisLocal->smembers(IMRedisKey::OUTER_USER_SET);
+        echo "sendMessageOuterLoginer \n";
+        print_r($fds);
         foreach ($fds as $fd) {
             if (!self::$iMServer->getWebSocketServer()->exist($fd)) {
+                echo 'tourist fd not exist' . $fd."\n";
                 Yii::info('tourist fd not exist' . $fd);
                 UserCenter::clear($fd);
                 continue;
@@ -129,6 +132,32 @@ class Message
                 self::$iMServer->getWebSocketServer()->push($fd, $jsonMessage);
 
             }
+        }
+    }
+
+    /**
+     * 给所有人发送
+     * @param $jsonMessage
+     * @author: sunny <sunny@guojiang.tv>
+     * @Date: 2019/4/16 11:45
+     */
+    static function sendMessageToAll($jsonMessage){
+        $start_fd = 0;
+        $webSocketServer=self::$iMServer->getWebSocketServer();
+        while(true)
+        {
+            $conn_list = $webSocketServer->getClientList($start_fd, 10);
+            if ($conn_list===false or count($conn_list) === 0)
+            {
+                break;
+            }
+            $start_fd = end($conn_list);
+
+            foreach($conn_list as $fd)
+            {
+                $webSocketServer->send($fd, $jsonMessage);
+            }
+
         }
     }
 }

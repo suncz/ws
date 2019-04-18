@@ -8,30 +8,31 @@
 
 namespace console\swooleService;
 
+use console\swooleService\IM\IMServer;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
-abstract class MQBase
+abstract class MQConsumerBase
 {
-    protected $_server;
+    protected $iMServer;
 
-    protected $_mqConnection;
-    protected $_mqChannel;
+    protected $mqConnection;
+    protected $mqChannel;
 
-    protected $_stop;
-    private $_isProcessing;
+    protected $stop;
+    private $isProcessing;
 
-    protected $_maxLoop = 10;
-    protected $_currentLoop = 0;
+    protected $maxLoop = 10;
+    protected $currentLoop = 0;
     public $queueConfig;
 
-    public function __construct($server)
+    public function __construct(IMServer $iMServer)
     {
-        $this->_server = $server;
+        Message::$iMServer = $iMServer;
 
-        $this->_mqConnection = new AMQPStreamConnection('10.0.5.179', 5672, 'guest', 'guest');
-        $this->_mqChannel = $this->_mqConnection->channel();
+        $this->mqConnection = new AMQPStreamConnection('10.0.5.179', 5672, 'guest', 'guest');
+        $this->mqChannel = $this->mqConnection->channel();
 
-        $this->_maxLoop = 10;
+        $this->maxLoop = 10;
     }
 
     //queue设置为自动删除
@@ -44,31 +45,31 @@ abstract class MQBase
         swoole_set_process_name('php ws' . ' ' . $className);
         pcntl_signal(SIGUSR1, function ($signo) use ($className) {
             Logger::info('stopping ' . $className . posix_getpid());
-            $this->_stop = true;
+            $this->stop = true;
 
             //如果不在处理，则立即停止
-            if (!$this->_isProcessing) {
-                $this->_mqChannel->close();
-                $this->_mqConnection->close();
+            if (!$this->isProcessing) {
+                $this->mqChannel->close();
+                $this->mqConnection->close();
                 Logger::info($className . '(' . posix_getpid() . ') stopped');
                 exit;
             }
         });
 
         //队列连接断开自动删除
-        $this->_mqChannel->queue_declare($this->queueConfig['queueName']);
+        $this->mqChannel->queue_declare($this->queueConfig['queueName']);
         foreach ($this->queueConfig['relationExchange'] as $exchangeInfo) {
             print_r($exchangeInfo);
-            $this->_mqChannel->exchange_declare($exchangeInfo['exchangeName'], $exchangeInfo['exchangeType'], false, $exchangeInfo['durable'], false);
-            $this->_mqChannel->queue_bind($this->queueConfig['queueName'], $exchangeInfo['exchangeName'],$exchangeInfo['routingKey']);
+            $this->mqChannel->exchange_declare($exchangeInfo['exchangeName'], $exchangeInfo['exchangeType'], false, $exchangeInfo['durable'], false);
+            $this->mqChannel->queue_bind($this->queueConfig['queueName'], $exchangeInfo['exchangeName'],$exchangeInfo['routingKey']);
         }
 
 
         print_r($className . '(' . posix_getpid() . ') consume queue of ' . $this->queueConfig['queueName']);
 
-        $this->_mqChannel->basic_consume($this->queueConfig['queueName'], '', false, false, false, false, function ($message) use ($className) {
+        $this->mqChannel->basic_consume($this->queueConfig['queueName'], '', false, false, false, false, function ($message) use ($className) {
 
-            $this->_isProcessing = true;
+            $this->isProcessing = true;
 
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
 
@@ -76,25 +77,25 @@ abstract class MQBase
 
             $this->handle($data);
 
-            $this->_isProcessing = false;
+            $this->isProcessing = false;
         });
 
         while (true) {
-            $this->_mqChannel->wait();
-            if ($this->_stop) {
+            $this->mqChannel->wait();
+            if ($this->stop) {
                 break;
             }
 
-            ++$this->_currentLoop;
-            echo "max loop is:".$this->_maxLoop."\n";
-            echo "current loop is:".$this->_currentLoop."\n";
-            if ($this->_maxLoop && $this->_currentLoop >= $this->_maxLoop) {
+            ++$this->currentLoop;
+            echo "max loop is:".$this->maxLoop."\n";
+            echo "current loop is:".$this->currentLoop."\n";
+            if ($this->maxLoop && $this->currentLoop >= $this->maxLoop) {
                 break;
             }
         }
 
-        $this->_mqChannel->close();
-        $this->_mqConnection->close();
+        $this->mqChannel->close();
+        $this->mqConnection->close();
 
         print_r($className . '(' . posix_getpid() . ') stopped');
     }

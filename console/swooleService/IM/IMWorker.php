@@ -47,25 +47,19 @@ class IMWorker extends WorkerBase
         $uid = trim(@$req->get['uid']);
         $rid = trim(@$req->get['rid']);
         $mid = trim(@$req->get['mid']);
-        if ($sid) {
-            Yii::$app->session->setId($sid);
-        }
         $fd = $req->fd;
         do {
             //游客
             try {
-
+                echo "fd is $fd \n";
                 $result = Yii::$app->runAction('service/user/connect', [$fd, $sid, $uid, $rid, $mid]);
 
                 $isPass=$result->data['isPass'];
-                if ($isPass == false) {
-                    $webSocketServer->push($fd, IMResponse::wsOutput(Cmd::D_CONNET, IMErrors::CONNECT_FAIL));
-                    $webSocketServer->after(2000, function () use ($fd) {
-                        $this->iMServer->getWebSocketServer()->close($fd, true);
-                    });
-                } else {
+                var_dump($result);
+                if ($isPass == true) {
                     $webSocketServer->push($fd, IMResponse::wsOutput(Cmd::D_CONNET, 200, 'ok'));
                 }
+
             } catch (\Exception $e) {
                 echo $e->getTraceAsString();
                 Yii::error($e->getTraceAsString());
@@ -90,7 +84,7 @@ class IMWorker extends WorkerBase
             $data = IMRequest::input($frame->data);
         } catch (Exception $e) {
             $data['cmd'] = Cmd::D_REQUEST_FAIL;
-            Message::sendSingleMessage($frame->fd, IMResponse::wsOutput(Cmd::D_REQUEST_FAIL, $e->getCode(), $e->getMessage()));
+            Message::sendMessageSingle($frame->fd, IMResponse::wsOutput(Cmd::D_REQUEST_FAIL, $e->getCode(), $e->getMessage()));
             return;
         }
         try {
@@ -99,7 +93,7 @@ class IMWorker extends WorkerBase
             $jsonData['data']=$data->d;
             Yii::$app->runAction('service/' . $data->cmd, [json_encode($jsonData)]);
         } catch (Exception $e) {
-            Message::sendSingleMessage($frame->fd, IMResponse::wsOutput(Cmd::D_SYS_FAIL, $e->getCode(), $e->getMessage()));
+            Message::sendMessageSingle($frame->fd, IMResponse::wsOutput(Cmd::D_SYS_FAIL, $e->getCode(), $e->getMessage()));
         }
     }
 

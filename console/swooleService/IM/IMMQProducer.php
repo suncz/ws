@@ -10,6 +10,7 @@ namespace console\swooleService\IM;
 
 use console\swooleService\IM\libs\IMRedisKey;
 use console\swooleService\MQProducerBase;
+use PhpAmqpLib\Message\AMQPMessage;
 
 class IMMQProducer extends MQProducerBase
 {
@@ -45,13 +46,13 @@ class IMMQProducer extends MQProducerBase
 
         $msg = json_encode(array(
                 'cmd' => 'sendToUsers',
-                'data' => array('cids' => array($cid), 'sendData' => $data),
+                'data' => array('uid' => array($uid), 'sendData' => $data),
             )
         );
 
-        Logger::debug('product sendTo cid:'.$cid.' data:'.json_encode($data));
+        Logger::debug('product sendTo cid:'.$uid.' data:'.json_encode($data));
 
-        $this->mqChannel->basic_publish(new AMQPMessage($msg), $this->_getServerExchangeName($serverId));
+        $this->mqChannel->basic_publish(new AMQPMessage($msg), 'sunny_im_point_to_point');
     }
 
     public function broadcast($data)
@@ -64,7 +65,7 @@ class IMMQProducer extends MQProducerBase
 
         Logger::debug('produce broadcast data:'.$msg);
 
-        $this->mqChannel->basic_publish(new AMQPMessage($msg), $this->_getBroadcastExchangeName());
+        $this->mqChannel->basic_publish(new AMQPMessage($msg), 'sunny_im_broadcast');
     }
 
     public function roomBroadcast($rid, $data)
@@ -74,7 +75,6 @@ class IMMQProducer extends MQProducerBase
                 'data' => array('rid' => $rid, 'sendData' => $data),
             )
         );
-
-        $this->mqChannel->basic_publish(new AMQPMessage($msg), $this->_getBroadcastExchangeName());
+        $this->mqChannel->basic_publish(new AMQPMessage($msg),'sunny_im_broadcast');
     }
 }

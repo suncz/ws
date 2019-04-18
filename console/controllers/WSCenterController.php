@@ -1,7 +1,7 @@
 <?php
 
 namespace console\controllers;
-
+defined('YII_CONSOLE_PATH') or define('YII_CONSOLE_PATH',realpath( __DIR__.'/../'));
 use yii\console\Controller;
 
 use yii\helpers\FileHelper;
@@ -80,10 +80,11 @@ class WSCenterController extends Controller
             $this->stderr("服务已经启动...");
             exit(1);
         }
+        echo "pid is".getmypid()." \n";
 
         // 写入进程
         $this->setPid();
-
+//        print_r($this->config);exit;
         // 运行
         $iMServer = new $this->server($this->config);
         $iMServer->templateMethod();
@@ -185,27 +186,6 @@ class WSCenterController extends Controller
         file_put_contents($this->config['pid_file'], $parentPid);
     }
 
-    public function actionT()
-    {
-//        Yii::$app->session->setId('puslf305qalqi898f8idid9bic');
-        Yii::$app->runAction('service/test/t');
-        exit;
-
-        Yii::$app->session->set('user_exam', ['exam_id' => 123, 'exam_type' => 456]);
-        Yii::$app->session->set('aaaaa', ['exam_id' => 123, 'exam_type' => 456]);
-        Yii::info( var_dump(Yii::$app->session->getId()));
-        var_dump(Yii::$app->session->get('aaaaa'));
-
-//        var_dump(Yii::$app->session->get());
-//        Yii::info('错误11，错误11，错误11');
-//        AMQP_OS_SOCKET_TIMEOUT_ERRNO;
-//        $mqConnection = new \AMQPConnection(['10.0.5.179', '5672', 'guest', 'guest']);
-//        if (!$mqConnection->connect()) {
-//            die("Cannot connect to the broker!\n");
-//        }
-//        $channel = new \AMQPChannel($mqConnection);
-//        var_dump($channel);
-    }
 
 
 }

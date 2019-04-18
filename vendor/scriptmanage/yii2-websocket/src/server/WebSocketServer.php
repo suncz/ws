@@ -53,11 +53,11 @@ class WebSocketServer
     {
         if($this->_type == 'ws')
         {
-            $this->_server = new swoole_websocket_server($this->_host, $this->_port, $this->_mode, $this->_socketType);
+            $this->_server = new \swoole_websocket_server($this->_host, $this->_port, $this->_mode, $this->_socketType);
         }
         else
         {
-            $this->_server = new swoole_websocket_server($this->_host, $this->_port, $this->_mode, $this->_socketType | SWOOLE_SSL);
+            $this->_server = new \swoole_websocket_server($this->_host, $this->_port, $this->_mode, $this->_socketType | SWOOLE_SSL);
         }
         $this->script=['second'=>5,'cmd'=>'/usr/local/php/bin/php /home/wwwroot/tchat.me/web/protected/yiic rank starta'];
         swoole_set_process_name('php '.'script manange websocket  master');
@@ -69,8 +69,8 @@ class WebSocketServer
         $this->_server->on('finish', [$this, 'onFinish']);
         $this->_server->on('close', [$this, 'onClose']);
         //创建处理脚本的进程
-        $process = new swoole_process(function ()  {
-            swoole_set_process_name('php getScript');
+        $process = new \swoole_process(function ()  {
+            \swoole_set_process_name('php getScript');
             
         });
         $this->_server->addProcess($process);
@@ -85,9 +85,9 @@ class WebSocketServer
     public function onWorkStart($serv, $worker_id){
         global $argv;
         if($worker_id >= $serv->setting['worker_num']) {
-            swoole_set_process_name("php {$argv[0]} task worker");
+            \swoole_set_process_name("php {$argv[0]} task worker");
         } else {
-            swoole_set_process_name("php {$argv[0]} event worker");
+            \swoole_set_process_name("php {$argv[0]} event worker");
         }
 
     }

@@ -7,7 +7,6 @@
  */
 
 namespace console\swooleService;
-
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -23,7 +22,7 @@ class MQProducerBase
         $this->server = $server;
 
         $this->mqConnection = new AMQPStreamConnection('10.0.5.179', 5672, 'guest', 'guest');
-        $this->mqChannel = $this->_mqConnection->channel();
+        $this->mqChannel = $this->mqConnection->channel();
     }
     public function exchangeDeclare(){
 

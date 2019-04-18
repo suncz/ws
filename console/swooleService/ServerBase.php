@@ -19,7 +19,6 @@ abstract class ServerBase
     { // 模板方法 调用基本方法组装顶层逻辑
         $this->setServerIp();
         $this->setwebSocketServer();
-        $this->setMQProducer();
         $this->start();
     }
 
@@ -44,6 +43,6 @@ abstract class ServerBase
     abstract protected function createMQProcess($className, $num);
 
     abstract protected function initMQProcess();
-    abstract protected function setMQProducer();
+    abstract protected function getMQProducer();
     abstract protected function start();
 }

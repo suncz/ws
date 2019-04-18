@@ -10,4 +10,24 @@ return [
             'outer' => true,
             'room' => true,
         ]],
+    'mQMsgConsume' => [
+        'queueName' => 'sunny_queue_msg_{ip}',
+        'broadcastExchange' => 'sunny_im_broadcast',
+        'pointToPointExchange' => 'sunny_im_point_to_point',
+        'relationExchange' => [
+            [
+                'exchangeName' => 'sunny_im_broadcast',
+                'exchangeType' => 'fanout',
+                'durable' => false,
+                'routingKey' => ''
+            ],
+            [
+                'exchangeName' => 'sunny_im_point_to_point',
+                'exchangeType' => 'direct',
+                'durable' => false,
+                'routingKey' => 'ip'
+            ],
+        ],
+    ]
+
 ];

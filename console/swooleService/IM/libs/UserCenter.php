@@ -8,6 +8,8 @@
 
 namespace console\swooleService\IM\libs;
 
+use console\swooleService\IM\IMResponse;
+use console\swooleService\Message;
 use Yii;
 
 class UserCenter
@@ -36,59 +38,58 @@ class UserCenter
     //用户在房间外登陆
     static function outerLogin($sid, $uid, $fd)
     {
-        $oldUserinfo = Yii::$app->redisLocal->hGetAll(IMRedisKey::getUserHashKey($uid));
+        $oldUserinfo = Yii::$app->redisLocal->hgetall(IMRedisKey::getUserHashKey($uid));
         //查看是否已存在连接数据，有则销毁
         if ($oldUserinfo) {
-            if (self::$iMServer->getWebSocketServer()->exist($fd)) {
-                self::$iMServer->getWebSocketServer()->close($fd, true);
+            $oldFd=$oldUserinfo['fd'];
+            if (Message::$iMServer->getWebSocketServer()->exist($oldFd)) {
+                Message::$iMServer->getWebSocketServer()->close($oldFd, true);
             }
-            Yii::$app->redisShare->del(IMRedisKey::getUserHashKey($uid));
+            self::clear($oldFd);
         }
 
         $userInfo['sid'] = $sid;
         $userInfo['uid'] = $uid;
-        $userInfo['nickname'] = Yii::$app->session->get('nickname');
-        $userInfo['headPic'] = Yii::$app->session->get('headPic');
-        $userInfo['serverIp'] = self::$iMServer->getServerIp();
+        $userInfo['serverIp'] = Message::$iMServer->getServerIp();
         $userInfo['fd'] = $fd;
-        Yii::$app->redisLocal->sAdd(IMRedisKey::OUTER_USER_SET, $fd);
-        Yii::$app->redisShare->hMSet(IMRedisKey::getUserHashKey($uid), $userInfo);
+        Yii::$app->redisLocal->sadd(IMRedisKey::OUTER_USER_SET, $fd);
+        Yii::$app->redisShare->hmset(IMRedisKey::getUserHashKey($uid), $userInfo);
+
     }
 
     //用户在房间外登陆
     static function roomLogin($sid, $uid, $fd, $rid)
     {
-        if (!$sid || !$uid || !$fd || $rid) {
-            return IMResponse::actOutPut(0, ['isPass' => false]);
+        if (!$sid || !$uid || !$fd || !$rid) {
+            return false;
         }
-        if (Yii::$app->session->get('uid') != $uid) {
-            return IMResponse::actOutPut(0, ['isPass' => false]);
 
-        }
-        $oldUserinfo = Yii::$app->redisShare->hGetAll(IMRedisKey::getUserHashKey($uid));
+        $oldUserinfo = Yii::$app->redisShare->hgetall(IMRedisKey::getUserHashKey($uid));
+
         //查看是否已存在连接数据，有则销毁
         if ($oldUserinfo) {
             $oldUserInfoJson = json_decode($oldUserinfo, true);
             $oldFd = $oldUserInfoJson['fd'];
             //单点登录
-            if (self::$iMServer->getWebSocketServer()->exist($oldFd)) {
-                self::$iMServer->getWebSocketServer()->push($fd, IMResponse::wsOutput(Cmd::D_CONNET, IMErrors::CONNECT_OTHER));
-                self::$iMServer->getWebSocketServer()->after(200, function () use ($fd) {
-                    self::$iMServer->getWebSocketServer()->close($fd, true);
+            if (!Message::$iMServer->getWebSocketServer()->exist($oldFd)) {
+                self::clear($oldFd);
+                Message::$iMServer->getWebSocketServer()->push($oldFd, IMResponse::wsOutput(Cmd::D_CONNET, IMErrors::CONNECT_OTHER));
+                Message::$iMServer->getWebSocketServer()->after(200, function () use ($oldFd) {
+                    Message::$iMServer->getWebSocketServer()->close($oldFd, true);
                 });
             }
             Yii::$app->redisShare->del(IMRedisKey::getUserHashKey($uid));
         }
         $userInfo['sid'] = $sid;
         $userInfo['uid'] = $uid;
-        $userInfo['nickname'] = Yii::$app->session->get('nickname');
-        $userInfo['headPic'] = Yii::$app->session->get('headPic');
-        $userInfo['serverIp'] = self::$iMServer->getServerIp();
+        $userInfo['serverIp'] = Message::$iMServer->getServerIp();
         $userInfo['fd'] = $fd;
         $jsonUser = json_encode($userInfo);
-        Yii::$app->redisLocal->hset(IMRedisKey::ROOM_MEMBER_HASH, $fd, $jsonUser);
+        Yii::$app->redisLocal->hset(IMRedisKey::roomMemberKey($rid), $fd, $jsonUser);
         Yii::$app->redisLocal->hset(IMRedisKey::ROOM_MAP_HASH, $fd, $rid);
-        Yii::$app->redisShare->hMSet(IMRedisKey::getUserHashKey($uid), $userInfo);
+        Yii::$app->redisShare->hmset(IMRedisKey::getUserHashKey($uid),$userInfo);
+
+        return true;
     }
     public static function getRoomId($fd){
         return  Yii::$app->redisLocal->hget(IMRedisKey::ROOM_MAP_HASH, $fd);
