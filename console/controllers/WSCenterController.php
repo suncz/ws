@@ -2,8 +2,11 @@
 
 namespace console\controllers;
 defined('YII_CONSOLE_PATH') or define('YII_CONSOLE_PATH',realpath( __DIR__.'/../'));
+
+use Symfony\Component\Console\Helper\Table;
 use yii\console\Controller;
 
+use yii\helpers\Console;
 use yii\helpers\FileHelper;
 use yii\log\Logger;
 use Yii;
@@ -68,7 +71,6 @@ class WSCenterController extends Controller
         'heartbeat_idle_time' => 600,// 检查最近一次发送数据的时间和当前时间的差，大于则强行关闭
     ];
 
-
     /**
      * 启动
      *
@@ -80,15 +82,9 @@ class WSCenterController extends Controller
             $this->stderr("服务已经启动...");
             exit(1);
         }
-        echo "pid is".getmypid()." \n";
-
-        // 写入进程
-        $this->setPid();
-//        print_r($this->config);exit;
-        // 运行
+        $this->stdout("服务正在运行,监听 {$this->config['host']}:{$this->config['port']}" . PHP_EOL);
         $iMServer = new $this->server($this->config);
         $iMServer->templateMethod();
-        $this->stdout("服务正在运行,监听 {$this->host}:{$this->port}" . PHP_EOL);
     }
 
     /**
@@ -97,7 +93,7 @@ class WSCenterController extends Controller
     public function actionStop()
     {
         $this->sendSignal(SIGTERM);
-        $this->stdout("服务已经停止, 停止监听 {$this->host}:{$this->port}" . PHP_EOL);
+        $this->stdout("服务已经停止, 停止监听 {$this->config['host']}:{$this->config['port']}" . PHP_EOL);
     }
 
     /**
@@ -127,12 +123,20 @@ class WSCenterController extends Controller
         $this->actionStart();
     }
 
-    //重启所有的worker 和tasker
+
+    /**
+     * 平滑重启 worker tasker
+     */
     public function actionReload()
     {
         $this->sendSignal(SIGUSR1);
     }
 
+    /**
+     * 平滑重启 tasker
+     * @author: sunny <sunny@guojiang.tv>
+     * @Date: 2019/4/19 18:13
+     */
     public function actionReloadTask()
     {
         $this->sendSignal(SIGUSR2);
@@ -160,32 +164,14 @@ class WSCenterController extends Controller
      */
     private function getPid()
     {
-        $pid_file = $this->config['pid_file'];
-        if (file_exists($pid_file)) {
-            $pid = file_get_contents($pid_file);
-            if (posix_getpgid($pid)) {
-                return $pid;
-            } else {
-                unlink($pid_file);
-            }
+       $pidCmd="ps aux|grep php |grep 'ws'|grep  'master' |awk '{print $2}'";
+
+        exec($pidCmd,$out);
+
+        if(count($out)<2){
+            return false;
         }
-
-        return false;
+        return $out[0];
     }
-
-    /**
-     * 写入pid进程
-     *
-     * @throws \yii\base\Exception
-     */
-    private function setPid()
-    {
-        $parentPid = getmypid();
-        $pidDir = dirname($this->config['pid_file']);
-        if (!file_exists($pidDir)) FileHelper::createDirectory($pidDir);
-        file_put_contents($this->config['pid_file'], $parentPid);
-    }
-
-
 
 }

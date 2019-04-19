@@ -53,6 +53,7 @@ class IMServer extends ServerBase
 //        print_r($this->config['setting']);exit;
         $this->webSocketServer->set($this->config['setting']);
         $server->on('Start', function ($server) use ($config) {
+
             Yii::info('[pid is:' . getmypid() . ']' . get_class() . '->' . __FUNCTION__ . '-' . '[start] line:' . __LINE__);
             print('server start' . "\n");
             echo "pid master is:" . $server->master_pid . "\n";
@@ -60,6 +61,7 @@ class IMServer extends ServerBase
         });
 
         $server->on('ManagerStart', function ($server) use ($config) {
+
             Yii::info('[pid is:' . getmypid() . ']' . get_class() . '->' . __FUNCTION__ . '-' . '[ManagerStart] line:' . __LINE__);
             print('ManagerStart' . "\n");
             echo "pid manager is:" . $server->manager_pid . "\n";
@@ -153,8 +155,7 @@ class IMServer extends ServerBase
 
     public function start()
     {
-
-        $this->initMQProcess();
+//        $this->initMQProcess();
         $this->webSocketServer->start();
     }
 
